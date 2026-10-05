@@ -1,0 +1,10 @@
+/* Global styles: loads Tailwind and adds the RAS brand colours as theme tokens,
+   so classes like bg-ras-green and text-ras-charcoal work in every component. */
+@import "tailwindcss";
+
+/* Colours sampled from the RAS logo (PROCESS.md §5). White and the neutral greys come from Tailwind. */
+@theme {
+  --color-ras-green: #194833;
+  --color-ras-charcoal: #252425;
+  --color-ras-grey: #515151;
+}
