@@ -1,0 +1,52 @@
+%% RAS Safety data model (ERD), drawn from supabase/schema.sql. Change both files together so they never drift.
+%% auth_users is Supabase's built-in login table (auth.users); the four other tables are ours.
+erDiagram
+    auth_users ||--|| profiles : "has one"
+    profiles ||--o{ submissions : "submits"
+    sites ||--o{ submissions : "has"
+    submissions ||--o{ submission_photos : "has"
+
+    auth_users {
+        uuid id PK "Supabase login (email + password)"
+        text email
+    }
+
+    profiles {
+        uuid id PK, FK "same id as auth_users; deleted with it"
+        text full_name "required"
+        text role "framer or admin; starts as framer"
+        timestamptz created_at
+    }
+
+    sites {
+        uuid id PK
+        text name "required"
+        text address
+        boolean is_active "default true"
+        timestamptz created_at
+    }
+
+    submissions {
+        uuid id PK
+        uuid user_id FK, UK "worker; one form per worker + site + day"
+        uuid site_id FK, UK
+        date work_date UK
+        boolean ppe_hard_hat
+        boolean ppe_vest
+        boolean ppe_boots
+        boolean ppe_eye_protection
+        boolean fall_protection
+        boolean ladders_scaffolding_inspected
+        boolean tools_cords_ok
+        boolean hazards_identified
+        text notes "max 1000 chars; required if hazards identified"
+        text status "submitted or reviewed"
+        timestamptz created_at
+    }
+
+    submission_photos {
+        uuid id PK
+        uuid submission_id FK "deleted with its submission"
+        text storage_path "file in the private submission-photos bucket"
+        timestamptz created_at
+    }
