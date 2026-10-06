@@ -1,12 +1,13 @@
 // Server actions: changes that run on the server and finish with a redirect or a plain-English error.
-// Signing in and out, and an admin marking a submission as reviewed.
+// Signing in and out, an admin marking a submission as reviewed, and emailing the admin about new forms.
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/data/profiles";
-import { setSubmissionReviewed } from "@/lib/data/submissions";
+import { getSubmissionById, setSubmissionReviewed } from "@/lib/data/submissions";
+import { sendNewSubmissionEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 
 // What the login form shows after a failed attempt; the email is sent back so the box stays filled in.
@@ -66,4 +67,33 @@ export async function markSubmissionReviewed(id: string): Promise<{ error: strin
   revalidatePath("/admin");
   revalidatePath(`/submissions/${id}`);
   redirect(`/submissions/${id}?reviewed=1`);
+}
+
+// Emails the admin about a form the framer has just sent (the safety form calls this after saving).
+// It never throws: an email problem is only logged, so the framer's form is never affected.
+// Until Resend is set up (see .env.example) it does nothing.
+export async function notifyAdminOfSubmission(submissionId: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!apiKey || !to || !appUrl) {
+    console.warn("Admin email skipped: set RESEND_API_KEY, ADMIN_NOTIFICATION_EMAIL and NEXT_PUBLIC_APP_URL to turn it on.");
+    return;
+  }
+
+  try {
+    // Read the form again here, as the logged-in person: the security rules only return their own
+    // forms (or any, for an admin), and the check below makes sure it is the sender's own.
+    const supabase = await createClient();
+    const profile = await getCurrentProfile(supabase);
+    const submission = await getSubmissionById(supabase, submissionId);
+    if (!profile || !submission || submission.user_id !== profile.id) {
+      console.error(`Admin email skipped: form ${submissionId} isn't the caller's own.`);
+      return;
+    }
+    const problem = await sendNewSubmissionEmail(submission, { apiKey, to, appUrl });
+    if (problem) console.error("Admin email failed:", problem);
+  } catch (error) {
+    console.error("Admin email failed:", error);
+  }
 }

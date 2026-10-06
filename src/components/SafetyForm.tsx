@@ -8,6 +8,7 @@ import ChecklistField from "./ChecklistField";
 import Message from "./Message";
 import PhotoInput, { type ChosenPhoto } from "./PhotoInput";
 import { CHECKLIST_ITEMS, MAX_NOTES_LENGTH } from "@/lib/constants";
+import { notifyAdminOfSubmission } from "@/lib/actions";
 import { submitSafetyForm } from "@/lib/data/submissions";
 import { createClient } from "@/lib/supabase/client";
 import type { ChecklistValues, Site } from "@/lib/types";
@@ -66,6 +67,8 @@ export default function SafetyForm({ userId, sites, today }: Props) {
         setSubmitting(false);
         return;
       }
+      // Ask the server to email the admin, without waiting: the email can never hold up or undo the form.
+      notifyAdminOfSubmission(result.submissionId).catch((error) => console.error("Could not ask for the admin email:", error));
       // The button stays disabled while the new submission's page loads, so it can't be sent twice.
       router.push(`/submissions/${result.submissionId}?created=1`);
     } catch (error) {

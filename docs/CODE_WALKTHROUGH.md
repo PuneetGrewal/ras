@@ -22,7 +22,7 @@
 2. **Jasdeep fills it in and taps Submit.** The phone checks every rule first (`validation.ts`) and explains problems in plain English.
 3. **The phone saves it** (`submitSafetyForm`): no earlier form for that site and day, photos uploaded into Jasdeep's own folder, then the form and its photo list saved.
 4. **A green "Form submitted" note** shows the saved form. On any failure the form stays open with one clear message.
-5. **Sarah, the supervisor, opens the Dashboard**: today per site, who hasn't submitted, a 7-day chart, and the filterable list.
+5. **Sarah, the supervisor, gets an email** (if set up) **and opens the Dashboard**: today per site, who hasn't submitted, a 7-day chart, and the filterable list.
 6. **Sarah taps Mark reviewed**; the server checks the admin role and the badge turns green.
 
 ## How security works

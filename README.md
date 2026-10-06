@@ -19,7 +19,7 @@ The other test framers use the same password: `tyler.morrison@example.com`, `meg
 
 - **Next.js 16** (App Router, TypeScript) with **Tailwind CSS**: the web app, hosted on **Vercel**.
 - **Supabase**: Postgres database, email + password login, private photo storage, and Row Level Security (the database itself decides who can see which rows).
-- **Recharts** for the one bar chart on the dashboard.
+- **Recharts** for the one bar chart on the dashboard, and **Resend** for the optional email to the admin about each new form.
 - No component library and no ORM: plain Tailwind classes and small, commented files. `docs/CODE_WALKTHROUGH.md` explains how it all fits together.
 
 ## Local setup
@@ -50,6 +50,14 @@ Before committing, `npm run lint` and `npm run build` must both pass.
    Do **not** add the secret key: it skips every security rule and the deployed app never uses it. Click **Deploy**.
 3. In Supabase, go to **Authentication → URL Configuration** and set **Site URL** to the Vercel address, so any link in a Supabase email points at the real site.
 4. Every push to `main` redeploys automatically.
+
+### Optional: email the admin about each new form
+
+After each successful submission, the app emails the admin the worker, site, date, whether hazards were identified, and a link to the form. If the email fails, the form is still saved; the problem is only logged.
+
+1. Create a free account at [resend.com](https://resend.com) and make an API key (**API Keys → Create API key**, "Sending access" is enough).
+2. In Vercel (**Settings → Environment Variables**) add `RESEND_API_KEY`, `ADMIN_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_APP_URL` (the Vercel address). Then redeploy (**Deployments → … → Redeploy**), because `NEXT_PUBLIC_` values are built into the app. For local testing put the same three in `.env.local`, with `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
+3. **Without a verified domain, Resend only delivers to the Resend account owner's own address**, sent from `onboarding@resend.dev`. So `ADMIN_NOTIFICATION_EMAIL` must be the email you signed up to Resend with, until you verify a domain in Resend and change the sender in `src/lib/email.ts`.
 
 ## Data model (ERD)
 
