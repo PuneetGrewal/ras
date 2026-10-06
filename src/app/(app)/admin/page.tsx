@@ -1,9 +1,17 @@
-// Admin dashboard. Placeholder until Step 5; for now it only makes sure the visitor is an admin.
+// Admin dashboard: today's summary, filters, and every submission that matches them. The filters
+// live in the web address (?site=&worker=&from=&to=), so a filtered view can be bookmarked or shared.
 import { redirect } from "next/navigation";
+import FilterBar from "@/components/FilterBar";
+import SubmissionTable from "@/components/SubmissionTable";
+import SummaryCards from "@/components/SummaryCards";
+import { getCurrentProfile, getFramers } from "@/lib/data/profiles";
+import { getAllSites } from "@/lib/data/sites";
+import { getSubmissions } from "@/lib/data/submissions";
+import { getDashboardSummary } from "@/lib/data/summary";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/data/profiles";
+import { parseSubmissionFilters } from "@/lib/validation";
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
   const supabase = await createClient();
   const profile = await getCurrentProfile(supabase);
 
@@ -11,10 +19,34 @@ export default async function AdminPage() {
   if (!profile) redirect("/login");
   if (profile.role !== "admin") redirect("/submit");
 
+  const filters = parseSubmissionFilters(await searchParams);
+  const [sites, framers, submissions] = await Promise.all([
+    getAllSites(supabase),
+    getFramers(supabase),
+    getSubmissions(supabase, filters),
+  ]);
+  const summary = await getDashboardSummary(supabase, sites, framers);
+  const filtered = Object.values(filters).some(Boolean);
+
   return (
-    <div>
+    <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="mt-2 text-ras-grey">Submissions, filters and the daily summary arrive in Step 5.</p>
+
+      <SummaryCards summary={summary} />
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">Submissions</h2>
+        {/* The key starts the filter boxes afresh whenever the address changes (Apply, Clear, Back button). */}
+        <FilterBar key={JSON.stringify(filters)} sites={sites} framers={framers} filters={filters} />
+        <p className="text-sm text-ras-grey">
+          {submissions.length === 1 ? "1 submission" : `${submissions.length} submissions`}
+          {filtered ? (submissions.length === 1 ? " matches these filters." : " match these filters.") : " in total."}
+        </p>
+        <SubmissionTable
+          submissions={submissions}
+          emptyText={filtered ? "No submissions match these filters." : "No submissions yet."}
+        />
+      </section>
     </div>
   );
 }

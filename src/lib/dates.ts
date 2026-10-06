@@ -38,3 +38,11 @@ export function formatDateTime(timestamp: string): string {
     timeStyle: "short",
   }).format(new Date(timestamp));
 }
+
+// The calendar day a number of days after (or, if negative, before) a "YYYY-MM-DD" date,
+// e.g. addDays("2026-10-05", -6) → "2026-09-29". Worked out in UTC so no clock change can shift it.
+export function addDays(date: string, days: number): string {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+}

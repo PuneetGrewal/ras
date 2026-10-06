@@ -78,3 +78,11 @@ export type SubmissionDetail = Submission & {
   site_name: string;
   photos: SubmissionPhoto[];
 };
+
+// The dashboard's filters, read from the web address (?site=&worker=&from=&to=). A missing one matches everything.
+export type SubmissionFilters = {
+  site?: string; // site id
+  worker?: string; // the worker's user id
+  from?: string; // "YYYY-MM-DD", inclusive
+  to?: string; // "YYYY-MM-DD", inclusive
+};

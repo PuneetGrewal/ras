@@ -17,3 +17,16 @@ export async function getCurrentProfile(supabase: SupabaseClient): Promise<Profi
   if (!data) throw new Error("This login has no profile. Ask an admin to check the profiles table in Supabase.");
   return data;
 }
+
+// Everyone with the framer role, A–Z, for the dashboard's worker filter and "Not submitted today".
+// The security rules only show admins other people's profiles.
+export async function getFramers(supabase: SupabaseClient): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "framer")
+    .order("full_name")
+    .overrideTypes<Profile[], { merge: false }>();
+  if (error) throw new Error(`Could not load the workers: ${error.message}`);
+  return data;
+}

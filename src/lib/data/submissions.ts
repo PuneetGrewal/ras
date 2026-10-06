@@ -2,7 +2,7 @@
 // database's security rules decide which rows come back (framers: their own; admins: everyone's).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { uploadPhoto } from "./photos";
-import type { ChecklistValues, Submission, SubmissionDetail, SubmissionPhoto, SubmissionWithRelations } from "@/lib/types";
+import type { ChecklistValues, Submission, SubmissionDetail, SubmissionFilters, SubmissionPhoto, SubmissionWithRelations } from "@/lib/types";
 
 // What the safety form hands over once validation has passed.
 export type SafetyFormInput = {
@@ -93,24 +93,41 @@ type JoinedSubmission = Submission & {
   sites: { name: string } | null;
 };
 
-// The logged-in user's own submissions, newest first, for "My submissions". Filtered by user
-// on purpose: for an admin, the security rules alone would return everyone's.
-export async function getMySubmissions(supabase: SupabaseClient, userId: string): Promise<SubmissionWithRelations[]> {
-  const { data, error } = await supabase
-    .from("submissions")
-    .select("*, profiles(full_name), sites(name), submission_photos(count)")
-    .eq("user_id", userId)
+// Supabase nests the joined names ({ profiles: { full_name } }); the pages want them as plain fields.
+function withNames<Row extends JoinedSubmission>({ profiles, sites, ...row }: Row) {
+  return { ...row, worker_name: profiles?.full_name ?? "Unknown worker", site_name: sites?.name ?? "Unknown site" };
+}
+
+// Submissions with names and photo counts, newest first, narrowed by any filters given (a missing
+// filter matches everything). For the dashboard the security rules return everyone's to admins.
+export async function getSubmissions(supabase: SupabaseClient, filters: SubmissionFilters): Promise<SubmissionWithRelations[]> {
+  let query = supabase.from("submissions").select("*, profiles(full_name), sites(name), submission_photos(count)");
+  if (filters.site) query = query.eq("site_id", filters.site);
+  if (filters.worker) query = query.eq("user_id", filters.worker);
+  if (filters.from) query = query.gte("work_date", filters.from); // the date range includes both ends
+  if (filters.to) query = query.lte("work_date", filters.to);
+
+  const { data, error } = await query
     .order("work_date", { ascending: false })
     .order("created_at", { ascending: false })
     .overrideTypes<(JoinedSubmission & { submission_photos: { count: number }[] })[], { merge: false }>();
-  if (error) throw new Error(`Could not load your submissions: ${error.message}`);
+  if (error) throw new Error(`Could not load the submissions: ${error.message}`);
 
-  return data.map(({ profiles, sites, submission_photos, ...submission }) => ({
-    ...submission,
-    worker_name: profiles?.full_name ?? "Unknown worker",
-    site_name: sites?.name ?? "Unknown site",
-    photo_count: submission_photos[0]?.count ?? 0,
-  }));
+  return data.map(({ submission_photos, ...row }) => ({ ...withNames(row), photo_count: submission_photos[0]?.count ?? 0 }));
+}
+
+// The logged-in user's own submissions for "My submissions". Filtered by user on purpose:
+// for an admin, the security rules alone would return everyone's.
+export async function getMySubmissions(supabase: SupabaseClient, userId: string): Promise<SubmissionWithRelations[]> {
+  return getSubmissions(supabase, { worker: userId });
+}
+
+// Marks a submission as reviewed. Returns false when nothing changed: the id doesn't exist, or the
+// security rules refused because the person isn't an admin (Postgres skips those rows silently).
+export async function setSubmissionReviewed(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await supabase.from("submissions").update({ status: "reviewed" }).eq("id", id).select("id");
+  if (error) throw new Error(`Could not mark the submission as reviewed: ${error.message}`);
+  return data.length > 0;
 }
 
 // One submission with its names and photos. Returns null when it doesn't exist or the security
@@ -126,11 +143,6 @@ export async function getSubmissionById(supabase: SupabaseClient, id: string): P
   if (error) throw new Error(`Could not load this submission: ${error.message}`);
   if (!data) return null;
 
-  const { profiles, sites, submission_photos, ...submission } = data;
-  return {
-    ...submission,
-    worker_name: profiles?.full_name ?? "Unknown worker",
-    site_name: sites?.name ?? "Unknown site",
-    photos: submission_photos,
-  };
+  const { submission_photos, ...row } = data;
+  return { ...withNames(row), photos: submission_photos };
 }

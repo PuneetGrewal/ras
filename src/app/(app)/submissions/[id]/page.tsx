@@ -1,6 +1,9 @@
 // One submission in full: worker, site, date, time sent, checklist, notes and photos. Framers can
-// open only their own; for anyone else's the database returns nothing, so this shows "not found".
+// open only their own (for anyone else's the database returns nothing, so this shows "not found");
+// admins can open any, and mark it reviewed.
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import MarkReviewedButton from "@/components/MarkReviewedButton";
 import Message from "@/components/Message";
 import PhotoGallery from "@/components/PhotoGallery";
 import StatusBadge from "@/components/StatusBadge";
@@ -13,10 +16,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function SubmissionDetailPage({ params, searchParams }: PageProps<"/submissions/[id]">) {
   const { id } = await params;
-  const { created } = await searchParams; // "?created=1" means the framer has just sent this form
+  // "?created=1": the framer has just sent this form. "?reviewed=1": an admin has just marked it reviewed.
+  const { created, reviewed } = await searchParams;
 
   const supabase = await createClient();
-  if (!(await getCurrentProfile(supabase))) redirect("/login");
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) redirect("/login");
+  const isAdmin = profile.role === "admin";
   const submission = await getSubmissionById(supabase, id);
   if (!submission) notFound();
   const photos = await getSignedPhotoUrls(supabase, submission.photos.map((photo) => photo.storage_path));
@@ -30,7 +36,12 @@ export default async function SubmissionDetailPage({ params, searchParams }: Pag
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
+      <Link href={isAdmin ? "/admin" : "/submissions"} className="inline-block py-2 font-medium text-ras-green underline">
+        ← {isAdmin ? "Back to dashboard" : "Back to my submissions"}
+      </Link>
+
       {created === "1" && <Message type="success">Form submitted. Thank you, your supervisor can now see it.</Message>}
+      {reviewed === "1" && <Message type="success">Marked as reviewed.</Message>}
 
       <div className="flex items-start justify-between gap-3">
         <h1 className="text-2xl font-semibold">Safety form</h1>
@@ -75,6 +86,8 @@ export default async function SubmissionDetailPage({ params, searchParams }: Pag
           <PhotoGallery photos={photos} />
         </div>
       </section>
+
+      {isAdmin && submission.status === "submitted" && <MarkReviewedButton submissionId={submission.id} />}
     </div>
   );
 }
