@@ -22,7 +22,7 @@
 2. **Jasdeep fills it in and taps Submit.** The phone checks every rule first (`validation.ts`) and explains problems in plain English.
 3. **The phone saves it** (`submitSafetyForm`): no earlier form for that site and day, photos uploaded into Jasdeep's own folder, then the form and its photo list saved.
 4. **A green "Form submitted" note** shows the saved form. On any failure the form stays open with one clear message.
-5. **Sarah, the supervisor, opens the Dashboard**: today per site, who hasn't submitted, the last 7 days, and the filterable list.
+5. **Sarah, the supervisor, opens the Dashboard**: today per site, who hasn't submitted, a 7-day chart, and the filterable list.
 6. **Sarah taps Mark reviewed**; the server checks the admin role and the badge turns green.
 
 ## How security works
@@ -49,7 +49,7 @@
 3. `src/lib/constants.ts`: add `{ key: "first_aid_kit", label: "First aid kit on site" }` to `CHECKLIST_ITEMS`.
 4. Add the column to `docs/erd.mmd` and the README diagram, then re-render `docs/erd.png` (the command is at the top of `erd.mmd`). The form, detail page and seed follow `CHECKLIST_ITEMS` by themselves; push to `main` to redeploy.
 
-**Change colours or logo.** Colours: the `--color-ras-…` lines in `src/app/globals.css`. Logo: replace `public/ras-logo.png` (same name).
+**Change colours or logo.** Colours: the `--color-ras-…` lines in `src/app/globals.css` and the three at the top of `src/components/SiteChart.tsx` (dashboard chart). Logo: replace `public/ras-logo.png` (same name).
 
 **Export to a spreadsheet.** Table Editor → `…` beside `submissions` → Export data → Export table as CSV (with ids). For names, run this in SQL Editor, then download the results as CSV:
 `select p.full_name as worker, si.name as site, s.* from submissions s join profiles p on p.id = s.user_id join sites si on si.id = s.site_id order by s.work_date desc;`

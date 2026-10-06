@@ -2,6 +2,7 @@
 // live in the web address (?site=&worker=&from=&to=), so a filtered view can be bookmarked or shared.
 import { redirect } from "next/navigation";
 import FilterBar from "@/components/FilterBar";
+import SiteChart from "@/components/SiteChart";
 import SubmissionTable from "@/components/SubmissionTable";
 import SummaryCards from "@/components/SummaryCards";
 import { getCurrentProfile, getFramers } from "@/lib/data/profiles";
@@ -33,6 +34,13 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <SummaryCards summary={summary} />
+
+      <section className="rounded border border-neutral-300 p-4">
+        <h2 className="font-semibold">Forms per site, last 7 days</h2>
+        <div className="mt-3">
+          <SiteChart data={summary.lastSevenDaysBySite.map(({ site, count }) => ({ site: site.name, count }))} />
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Submissions</h2>

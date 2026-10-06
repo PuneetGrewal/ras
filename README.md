@@ -19,6 +19,7 @@ The other test framers use the same password: `tyler.morrison@example.com`, `meg
 
 - **Next.js 16** (App Router, TypeScript) with **Tailwind CSS**: the web app, hosted on **Vercel**.
 - **Supabase**: Postgres database, email + password login, private photo storage, and Row Level Security (the database itself decides who can see which rows).
+- **Recharts** for the one bar chart on the dashboard.
 - No component library and no ORM: plain Tailwind classes and small, commented files. `docs/CODE_WALKTHROUGH.md` explains how it all fits together.
 
 ## Local setup
