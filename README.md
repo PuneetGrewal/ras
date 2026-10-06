@@ -6,7 +6,7 @@ Daily site safety forms for Ron Anderson & Sons (RAS) crews. Before starting wor
 
 ## Deployed app
 
-_TODO (Step 7)_
+**https://ras-iota-snowy.vercel.app** (hosted on Vercel, built from the `main` branch). The test logins are under Test credentials below.
 
 ## Test credentials
 
