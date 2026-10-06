@@ -1,5 +1,6 @@
 %% RAS Safety data model (ERD), drawn from supabase/schema.sql. Change both files together so they never drift.
 %% auth_users is Supabase's built-in login table (auth.users); the four other tables are ours.
+%% Rendered to docs/erd.png with: npx -y @mermaid-js/mermaid-cli -i docs/erd.mmd -o docs/erd.png -b white -s 2
 erDiagram
     auth_users ||--|| profiles : "has one"
     profiles ||--o{ submissions : "submits"
