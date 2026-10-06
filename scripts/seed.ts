@@ -1,9 +1,10 @@
-// Seed script: creates the test logins (1 admin + 5 framers) and the construction sites.
-// Run with `npm run seed`. Safe to run again: anything that already exists is skipped.
+// Seed script: creates the test logins (1 admin + 5 framers), the construction sites and sample
+// safety forms. Run with `npm run seed`. Safe to run again: anything that already exists is skipped.
 // It talks to Supabase directly with the secret key (not via src/lib/data) because it is a one-off admin tool.
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, TEST_FRAMER_PASSWORD } from "../src/lib/constants";
+import { seedSubmissions } from "./seed-submissions";
 
 config({ path: ".env.local", quiet: true });
 
@@ -54,7 +55,8 @@ async function ensureUser(existing: Map<string, string>, email: string, password
   return data.user.id;
 }
 
-async function seedUsers() {
+// Returns the framers' user ids, in FRAMER_NAMES order, for the sample forms.
+async function seedUsers(): Promise<string[]> {
   console.log("Users:");
   // One page of up to 1000 users is plenty for a seed of six.
   const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -67,14 +69,17 @@ async function seedUsers() {
   if (promoteError) throw new Error(`Could not make ${TEST_ADMIN_EMAIL} an admin: ${promoteError.message}`);
   console.log(`  ${TEST_ADMIN_EMAIL} is an admin`);
 
+  const framerIds: string[] = [];
   for (const name of FRAMER_NAMES) {
-    await ensureUser(existing, emailFor(name), TEST_FRAMER_PASSWORD, name);
+    framerIds.push(await ensureUser(existing, emailFor(name), TEST_FRAMER_PASSWORD, name));
   }
+  return framerIds;
 }
 
-async function seedSites() {
+// Returns the sites' ids, in SITES order, for the sample forms.
+async function seedSites(): Promise<string[]> {
   console.log("Sites:");
-  const { data, error } = await supabase.from("sites").select("name");
+  const { data, error } = await supabase.from("sites").select("id, name");
   if (error) throw new Error(`Could not read sites: ${error.message}`);
   const existingNames = new Set(data.map((site) => site.name));
 
@@ -82,15 +87,17 @@ async function seedSites() {
   for (const site of SITES) {
     console.log(existingNames.has(site.name) ? `  skip  ${site.name} (already exists)` : `  added ${site.name}`);
   }
-  if (missing.length > 0) {
-    const { error: insertError } = await supabase.from("sites").insert(missing);
-    if (insertError) throw new Error(`Could not add sites: ${insertError.message}`);
-  }
+  const { data: added, error: insertError } = await supabase.from("sites").insert(missing).select("id, name");
+  if (insertError) throw new Error(`Could not add sites: ${insertError.message}`);
+
+  const idByName = new Map([...data, ...added].map((site) => [site.name, site.id]));
+  return SITES.map((site) => idByName.get(site.name) as string);
 }
 
 async function main() {
-  await seedUsers();
-  await seedSites();
+  const framerIds = await seedUsers();
+  const siteIds = await seedSites();
+  await seedSubmissions(supabase, framerIds, siteIds);
   console.log("Seed complete.");
 }
 
