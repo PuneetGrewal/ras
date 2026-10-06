@@ -68,3 +68,13 @@ export type SubmissionWithRelations = Submission & {
   site_name: string;
   photo_count: number;
 };
+
+// The eight checklist answers, keyed by column name, as the safety form collects them.
+export type ChecklistValues = Record<ChecklistKey, boolean>;
+
+// Everything the detail page shows about one submission: the row, the names and its photos.
+export type SubmissionDetail = Submission & {
+  worker_name: string;
+  site_name: string;
+  photos: SubmissionPhoto[];
+};

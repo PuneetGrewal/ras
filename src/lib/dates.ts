@@ -17,3 +17,24 @@ export function todayInCompanyTimezone(): string {
     parts.find((p) => p.type === type)?.value ?? "";
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
+
+// A work_date ("2026-10-06") for display, e.g. "Tue, Oct 6, 2026". It is a plain calendar day,
+// so it is formatted as UTC; on Vancouver's clock the same value would show as the day before.
+export function formatWorkDate(workDate: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "UTC",
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${workDate}T00:00:00Z`));
+}
+
+// A moment in time (e.g. when a form was sent) on Vancouver's clock, e.g. "Oct 6, 2026, 7:42 a.m.".
+export function formatDateTime(timestamp: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: COMPANY_TIMEZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(timestamp));
+}

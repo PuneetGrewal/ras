@@ -38,6 +38,7 @@ Decisions made where the brief left a gap:
 - **Photos:** 1–5 required per submission, JPEG, PNG or WebP only, 10 MB or less each. iPhones convert HEIC photos to JPEG automatically for this upload field. The field deliberately has no `capture` attribute, so phones offer the "Take photo / Photo library" choice.
 - **Notes** are optional (up to 1000 characters) **unless "Hazards identified" is checked — then notes are required**.
 - **"Today"** means today in the `America/Vancouver` timezone, not the server's UTC clock.
+- **Date:** the form starts on today and refuses future dates. Earlier dates are allowed, so a framer can still send a form they forgot.
 - **Workers added in the Supabase dashboard** get the part of their email before the @ as their name (the dashboard's "Add user" form has no name field); edit `full_name` in the `profiles` table to fix it.
 - **Safety records are kept:** a worker who has submitted forms can't be deleted from the database, because their submissions point at them.
 - **Out of scope:** self-signup, a password-reset screen, editing or deleting submissions, a site-management screen, and pagination. Workers and sites are added in the Supabase dashboard (steps in `docs/CODE_WALKTHROUGH.md`).
@@ -47,5 +48,8 @@ Decisions made where the brief left a gap:
 _TODO (Step 8)_
 
 ## Known limitations
+
+- Photos upload straight from the phone before the form is saved. If a later step fails (e.g. the connection drops), the uploaded files stay in Storage unused; the framer sees an error and can send the form again.
+- In the rare case the form saves but its photo list doesn't, the framer is told to contact their supervisor, because submissions can't be edited or deleted in the app.
 
 _TODO (Step 8)_
